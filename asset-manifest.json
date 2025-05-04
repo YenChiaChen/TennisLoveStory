@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/TennisLoveStory/static/css/main.7d3bc710.css",
-    "main.js": "/TennisLoveStory/static/js/main.5e929b02.js",
+    "main.css": "/TennisLoveStory/static/css/main.c4fcaf41.css",
+    "main.js": "/TennisLoveStory/static/js/main.10e13804.js",
     "index.html": "/TennisLoveStory/index.html",
-    "main.7d3bc710.css.map": "/TennisLoveStory/static/css/main.7d3bc710.css.map",
-    "main.5e929b02.js.map": "/TennisLoveStory/static/js/main.5e929b02.js.map"
+    "main.c4fcaf41.css.map": "/TennisLoveStory/static/css/main.c4fcaf41.css.map",
+    "main.10e13804.js.map": "/TennisLoveStory/static/js/main.10e13804.js.map"
   },
   "entrypoints": [
-    "static/css/main.7d3bc710.css",
-    "static/js/main.5e929b02.js"
+    "static/css/main.c4fcaf41.css",
+    "static/js/main.10e13804.js"
   ]
 }
