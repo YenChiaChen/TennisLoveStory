@@ -4,6 +4,8 @@ import { StoryEngine } from "../../engines/StoryEngine";
 import { MAIN_STORY } from "../../data/story/main_story"; // Import the actual story data
 import { getCharacterById, CHARACTERS_DATA } from "../../data/characters"; // Import character data
 import type { StoryNode, Choice } from "../../types";
+import { SettingsScreen } from "../SettingScreen/SettingScreen";
+import { COMBINED_STORY_DATA } from "../../data/story/senpai_A_sidequest_1";
 
 // Import UI Components
 import { BackgroundDisplay } from "../../components/BackgroundDisplay";
@@ -11,6 +13,8 @@ import { CharacterSprite } from "../../components/CharacterSprite";
 import { DialogueBox } from "../../components/DialogueBox";
 import { ChoiceButton } from "../../components/ChoiceButton";
 import { getSceneById } from "../../data/scenes";
+import { MapView } from "../MapView/MapView";
+import { AnimatePresence } from "framer-motion";
 
 // Placeholder for MiniGame components mapping
 // import { TennisRallyGame } from './MiniGames/TennisRally/TennisRallyGame';
@@ -39,13 +43,21 @@ export const MainGame: React.FC = () => {
   const [dialogueIndex, setDialogueIndex] = useState(0); // For multi-part dialogue
   const [showChoices, setShowChoices] = useState(false);
   const [speakerName, setSpeakerName] = useState<string | null>(null);
+  const [isMapOpen, setIsMapOpen] = useState(false); // New state for map view
   const [currentCharacterSprite, setCurrentCharacterSprite] = useState<
     string | null
   >(null);
   const [currentBackground, setCurrentBackground] = useState<string | null>(
     null
   );
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const handleToggleSettings = useCallback(() => {
+    setIsSettingsOpen((prev) => !prev);
+  }, []);
 
+  const miniGameReturnContext = useGameStore(
+    (state) => state.miniGameReturnContext
+  );
   const handleDebugReset = useCallback(() => {
     if (window.confirm("確定要重置所有遊戲進度到初始狀態嗎？(僅限 Debug)")) {
       console.log("DEBUG: Resetting game state...");
@@ -66,8 +78,12 @@ export const MainGame: React.FC = () => {
 
   // --- Engine Instantiation ---
   // Use useMemo to create the engine instance only once
-  const storyEngine = useMemo(() => new StoryEngine(MAIN_STORY), []); // Pass the imported story data
+  const storyEngine = useMemo(() => new StoryEngine(COMBINED_STORY_DATA), []); // Pass the imported story data
 
+  const handleToggleMap = useCallback(() => {
+    // Maybe add conditions later (e.g., can't open map during certain scenes)
+    setIsMapOpen((prev) => !prev);
+  }, []);
   // --- Effects ---
 
   // Effect to update component state when the story node changes in the store
@@ -101,7 +117,8 @@ export const MainGame: React.FC = () => {
 
       // Update Background (Scene might be set by node effect, or check node directly)
       const scene = getSceneById(node.sceneId);
-      setCurrentBackground(scene ? scene.backgroundPath : null); // Use scene data
+      setCurrentBackground(scene ? scene.backgroundPath : null);
+      console.log(currentBackground);
 
       // Process node entry effects (scene changes, audio, state updates)
       // This should ideally happen *after* the UI state is ready to reflect the node
@@ -119,6 +136,60 @@ export const MainGame: React.FC = () => {
   }, [currentStoryNodeId, storyEngine]); // Rerun when node ID changes
 
   // --- Event Handlers ---
+
+  const handleMiniGameComplete = useCallback(
+    (result: any) => {
+      console.log(
+        "Minigame completed with result:",
+        result,
+        "Return context:",
+        miniGameReturnContext
+      );
+      // --- Process result based on the specific minigame ---
+      // Example: Update flags based on result for the specific activeMiniGameId
+      // if (activeMiniGameId === 'tennis_rally' && result.score > 10) { ... }
+
+      // --- Determine where to return ---
+      let nextNodeId: string | null = null;
+
+      if (miniGameReturnContext === "story" && currentNode?.nextNodeId) {
+        // If triggered by story, go to the node's defined next step
+        nextNodeId = currentNode.nextNodeId;
+        console.log(`Returning to story node: ${nextNodeId}`);
+      } else if (miniGameReturnContext === "map") {
+        // If triggered by map, decide where to go.
+        // Option A: Re-open the map?
+        // setIsMapOpen(true); // This might feel abrupt.
+        // Option B: Go to a generic post-minigame node?
+        // nextNodeId = 'post_map_minigame_node'; // Define this node in story data
+        // Option C: Just stay where you are (clear minigame state, no node change)? Might be weird.
+
+        // Let's choose Option B for now (requires defining the node)
+        nextNodeId = "post_map_activity_node"; // Define this node in main_story.ts
+        console.log(`Returning from map minigame to node: ${nextNodeId}`);
+      } else if (currentNode?.nextNodeId) {
+        // Fallback: If context is missing, try story node's next id
+        console.warn(
+          "Minigame context missing, falling back to currentNode.nextNodeId"
+        );
+        nextNodeId = currentNode.nextNodeId;
+      } else {
+        // Fallback if no context and no next node
+        console.warn(
+          "No return context or next node after minigame from node:",
+          currentNode?.id
+        );
+        nextNodeId = "start"; // Or some other safe fallback node
+      }
+
+      // --- Update State ---
+      setActiveMiniGame(null, null); // Clear minigame ID and context!
+      if (nextNodeId) {
+        useGameStore.getState().setStoryNode(nextNodeId); // Use direct store access if needed within callback
+      }
+    },
+    [currentNode, setActiveMiniGame, miniGameReturnContext]
+  );
 
   const handleDialogueAdvance = useCallback(() => {
     if (!currentNode || showChoices || activeMiniGameId) return; // Don't advance if showing choices or in minigame
@@ -163,32 +234,6 @@ export const MainGame: React.FC = () => {
     [currentNode, storyEngine]
   );
 
-  const handleMiniGameComplete = useCallback(
-    (result: any) => {
-      console.log("Minigame completed with result:", result);
-      // Here you would typically:
-      // 1. Process the result (e.g., update game flags or affection based on score)
-      //    Example: if(result.score > 5) { useGameStore.getState().setGameFlag('minigame_A_passed', true); }
-      // 2. Find the *next* story node after the minigame (this needs defining in your story data or engine logic)
-      //    Example: const nextNodeId = currentNode?.nextNodeId ?? 'minigame_fallback_node';
-      // 3. Clear the active minigame state and set the next story node
-      setActiveMiniGame(null);
-      // useGameStore.getState().setStoryNode(nextNodeId);
-
-      // For now, just go to the next node defined in the node that triggered the minigame
-      if (currentNode?.nextNodeId) {
-        useGameStore.getState().setStoryNode(currentNode.nextNodeId);
-      } else {
-        console.warn(
-          "No nextNodeId defined after minigame on node:",
-          currentNode?.id
-        );
-        // Maybe go to a default 'minigame_complete' node?
-      }
-    },
-    [currentNode, setActiveMiniGame]
-  );
-
   // --- Rendering Logic ---
 
   const CurrentMiniGameComponent = activeMiniGameId
@@ -204,26 +249,41 @@ export const MainGame: React.FC = () => {
       >
         RESET GAME
       </button>
+      <button
+        onClick={handleToggleSettings}
+        className="absolute top-2 left-2 z-50 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-2 rounded shadow opacity-80 hover:opacity-100"
+        title="開啟設定/狀態"
+      >
+        MENU
+      </button>
+      {/* <button
+        onClick={handleToggleMap}
+        className="absolute top-10 left-2 z-50 bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1 px-2 rounded shadow opacity-80 hover:opacity-100"
+        title="開啟地圖"
+        disabled={isMapOpen || isSettingsOpen || !!activeMiniGameId} // Disable if map/settings/minigame active
+      >
+        MAP
+      </button> */}
       {/* 1. Background Layer */}
       <BackgroundDisplay imagePath={currentBackground} />
-
       {/* 2. Character Layer */}
       {/* Basic implementation showing one character, centered */}
-      <CharacterSprite
-        imagePath={currentCharacterSprite}
-        altText={speakerName ?? "Character"}
-        isVisible={!!currentCharacterSprite}
-        position="center" // Adjust positioning logic as needed (e.g., based on speaker)
-      />
+      <AnimatePresence mode="wait">
+        <CharacterSprite
+          key={currentCharacterSprite}
+          imagePath={currentCharacterSprite}
+          altText={speakerName ?? "Character"}
+          isVisible={!!currentCharacterSprite}
+          position="center" // Adjust positioning logic as needed (e.g., based on speaker)
+        />
+      </AnimatePresence>
       {/* TODO: Add logic to display multiple characters if needed */}
-
       {/* 3. Mini-Game Layer (Renders on top of background/characters, hides dialogue) */}
       {CurrentMiniGameComponent && (
         <div className="absolute inset-0 z-30 bg-black bg-opacity-50 flex items-center justify-center">
           <CurrentMiniGameComponent onComplete={handleMiniGameComplete} />
         </div>
       )}
-
       {/* 4. UI Layer (Dialogue / Choices) - Hidden during minigame */}
       {!activeMiniGameId && currentNode && (
         <>
@@ -259,7 +319,13 @@ export const MainGame: React.FC = () => {
           )}
         </>
       )}
-
+      {/* 5. Settings Screen Layer */}
+      {isSettingsOpen && <SettingsScreen onClose={handleToggleSettings} />}
+      {/* 6. Map View Layer */}
+      {isMapOpen && (
+        <MapView onClose={handleToggleMap} storyEngine={storyEngine} />
+      )}{" "}
+      {/* Pass engine */}
       {/* Add Loading indicator? */}
       {/* { !currentNode && !activeMiniGameId && <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white text-3xl">Loading...</p> } */}
     </div>
