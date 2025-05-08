@@ -74,6 +74,16 @@ export const determineAndTriggerEnding = (): GameStateModifier =>
     setActiveEnding(bestEndingId);
   };
 
+  export const unlockPhoneFeature = (): GameStateModifier =>
+    () => {
+      useGameStore.getState().unlockPhone();
+    };
+  
+  export const advanceToNextDay = (days: number = 1): GameStateModifier =>
+    () => {
+        useGameStore.getState().advanceDay(days);
+    };  
+
 export const checkAndTriggerSideQuests = (defaultNextNodeId: string | null): GameStateModifier =>
   (gameState, characterState) => {
       if (gameState.isInSideQuest) {
@@ -122,6 +132,7 @@ export const decreaseAffection = (characterId: string, amount: number): GameStat
 
 export const setMetCharacter = (characterId: string): GameStateModifier =>
   () => {
+    console.log(`EFFECT: Trying to set met status for ${characterId}`);
     useCharacterStore.getState().setHasMet(characterId, true);
   };
 

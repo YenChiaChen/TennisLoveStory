@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { GameState } from '../types';
+import type { AffectionAnimationItem, GameState } from '../types';
 
 type MiniGameReturnContext = 'story' | 'map' | null;
 
@@ -15,7 +15,15 @@ interface GameStateActions {
   startSideQuest: (sideQuestNodeId: string, returnNodeId: string) => void;
   endSideQuest: () => void; // New action
   setActiveEnding: (endingId: string | null) => void;
+  addAffectionAnimation: (characterId: string, amount: number) => void;
+  removeAffectionAnimation: (id: number) => void;
+  unlockPhone: () => void;      // New action
+  openPhone: () => void;        // New action
+  closePhone: () => void;       // New action
+  advanceDay: (days?: number) => void; // New action to advance day counter
 }
+
+let nextAnimationId = 0;
 
 const initialGameState: GameState = {
   currentStoryNodeId: 'start', // Default starting node ID
@@ -26,6 +34,10 @@ const initialGameState: GameState = {
   isInSideQuest: false,
   returnStoryNodeId: null,
   activeEndingId: null,
+  affectionAnimationQueue: [],
+  isPhoneUnlocked: false, 
+  isPhoneOpen: false,    
+  currentDay: 1,         
 };
 
 
@@ -78,6 +90,60 @@ export const useGameStore = create<GameState & GameStateActions>()(
 
       setActiveEnding: (endingId) => set({ activeEndingId: endingId }),
 
+      addAffectionAnimation: (characterId, amount) => {
+        const newItem: AffectionAnimationItem = {
+          id: nextAnimationId++, // Assign unique ID
+          characterId,
+          amount,
+        };
+        console.log('Queueing affection animation:', newItem);
+        set((state) => ({
+          // Add new item to the end of the queue
+          affectionAnimationQueue: [...state.affectionAnimationQueue, newItem],
+        }));
+
+         // Optional: Automatically remove after a delay if not handled by component exit
+         // setTimeout(() => {
+         //     get().removeAffectionAnimation(newItem.id);
+         // }, 3000); // Remove after 3 seconds timeout
+      },
+
+      removeAffectionAnimation: (idToRemove: number) => {
+         // console.log('Removing affection animation:', idToRemove);
+          set((state) => ({
+              affectionAnimationQueue: state.affectionAnimationQueue.filter(
+                  (item) => item.id !== idToRemove
+              ),
+          }));
+      },
+
+      unlockPhone: () => {
+        console.log("Phone Unlocked!");
+        set({ isPhoneUnlocked: true });
+      },
+      openPhone: () => {
+          // Optional: Add checks if phone can be opened (e.g., not during minigame/ending)
+          if (get().activeMiniGameId || get().activeEndingId || get().isPhoneOpen) return;
+          console.log("Opening Phone");
+          set({ isPhoneOpen: true });
+      },
+      closePhone: () => {
+          console.log("Closing Phone");
+          set({ isPhoneOpen: false });
+      },
+      // --- Day Action ---
+      advanceDay: (days = 1) => {
+          if (days <= 0) return;
+          set((state) => {
+              const nextDay = state.currentDay + days;
+              console.log(`Advancing day to: ${nextDay}`);
+              // You might trigger other checks here when day advances (e.g., new events available)
+              return { currentDay: nextDay };
+          });
+           // Potentially check for side quests again at start of day?
+          // checkAndTriggerSideQuests(...); // Needs careful implementation
+      },
+
       resetGameState: () => set(initialGameState),
       loadGameState: (state) => set(state),
     }),
@@ -88,7 +154,10 @@ export const useGameStore = create<GameState & GameStateActions>()(
         currentStoryNodeId: state.currentStoryNodeId,
         currentSceneId: state.currentSceneId,
         gameFlags: state.gameFlags,
-        // Don't persist activeMiniGameId, as it's runtime state
+        isInSideQuest: state.isInSideQuest, // Persist quest status
+        returnStoryNodeId: state.returnStoryNodeId, // Persist return node
+        isPhoneUnlocked: state.isPhoneUnlocked, // Persist unlocked status
+        currentDay: state.currentDay, // Persist current day
       }),
     }
   )

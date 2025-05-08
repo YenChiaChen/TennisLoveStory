@@ -17,11 +17,9 @@ export const CHARACTERS_DATA: Record<string, Character> = {
     name: '男生隊長',
     description: '陽光開朗的網球隊隊長，三年級。',
     sprites: {
-      default: 'https://res.cloudinary.com/dcpzacz9d/image/upload/v1746276763/2_urdlc1.png', 
-      happy: 'https://res.cloudinary.com/dcpzacz9d/image/upload/v1746276763/2_urdlc1.png',
-      blushing: 'https://res.cloudinary.com/dcpzacz9d/image/upload/v1746276763/2_urdlc1.png',
+      default: 'https://res.cloudinary.com/dcpzacz9d/image/upload/v1746366517/2_zksuic.webp', 
     },
-    initialAffection: 20, // 初始好感度
+    initialAffection: 0,
     isLoveInterest: true,
   },
   'coach': {
@@ -29,19 +27,29 @@ export const CHARACTERS_DATA: Record<string, Character> = {
     name: '網球隊教練',
     description: '最溫柔的網球隊教練，愛吃真善美牛肉麵。',
     sprites: {
-      default: 'https://res.cloudinary.com/dcpzacz9d/image/upload/v1746293249/7_xdq6da.png', 
+      default: 'https://res.cloudinary.com/dcpzacz9d/image/upload/v1746366524/222_vrvdtx.webp', 
     },
-    initialAffection: 0, // 初始好感度
+    initialAffection: 0,
     isLoveInterest: true,
+  },
+  'all': {
+    id: 'all',
+    name: '眾人',
+    description: '',
+    sprites: {
+      default: '', 
+    },
+    initialAffection: 5,
+    isLoveInterest: false,
   },
   'classmate_yu': {
     id: 'classmate_yu',
     name: '馮同學',
     description: '很好相處的個性，立志要成為網球王。',
     sprites: {
-      default: 'https://res.cloudinary.com/dcpzacz9d/image/upload/v1746276763/1_kc5jb3.png', 
+      default: 'https://res.cloudinary.com/dcpzacz9d/image/upload/v1746366517/1_crn17p.webp', 
     },
-    initialAffection: 0, // 初始好感度
+    initialAffection: 5, // 初始好感度
     isLoveInterest: true,
   },
   'classmate_yue': {
@@ -49,7 +57,7 @@ export const CHARACTERS_DATA: Record<string, Character> = {
     name: '林同學',
     description: '酷酷的個性，是網球隊的第一單打。',
     sprites: {
-      default: 'https://res.cloudinary.com/dcpzacz9d/image/upload/v1746276763/3_jzpnw5.png', 
+      default: 'https://res.cloudinary.com/dcpzacz9d/image/upload/v1746366518/3_xkymon.webp', 
     },
     initialAffection: 0, // 初始好感度
     isLoveInterest: true,
@@ -59,9 +67,9 @@ export const CHARACTERS_DATA: Record<string, Character> = {
     name: '老不死的家哥',
     description: '沒有人知道這個人在網球隊待了多久。',
     sprites: {
-      default: 'https://res.cloudinary.com/dcpzacz9d/image/upload/v1746276766/5_uf51yf.png', 
+      default: 'https://res.cloudinary.com/dcpzacz9d/image/upload/v1746366521/5_ypv8jt.webp', 
     },
-    initialAffection: 0, // 初始好感度
+    initialAffection: -1000, // 初始好感度
     isLoveInterest: true,
   },
   'classmate_liao': {
@@ -69,7 +77,7 @@ export const CHARACTERS_DATA: Record<string, Character> = {
     name: '廖同學',
     description: '喜歡玩音樂遊戲，成績很好，是河濱網球王。',
     sprites: {
-      default: 'https://res.cloudinary.com/dcpzacz9d/image/upload/v1746293249/6_ulcksj.png', 
+      default: 'https://res.cloudinary.com/dcpzacz9d/image/upload/v1746366525/111_bezxzv.webp', 
     },
     initialAffection: 0, // 初始好感度
     isLoveInterest: true,
@@ -79,7 +87,7 @@ export const CHARACTERS_DATA: Record<string, Character> = {
     name: '麻大哥',
     description: '看屁。',
     sprites: {
-      default: 'https://res.cloudinary.com/dcpzacz9d/image/upload/v1746276764/4_wpqi5z.png', 
+      default: 'https://res.cloudinary.com/dcpzacz9d/image/upload/v1746366520/4_tcmzr1.webp', 
     },
     initialAffection: 0, // 初始好感度
     isLoveInterest: true,
@@ -89,19 +97,17 @@ export const CHARACTERS_DATA: Record<string, Character> = {
     name: '郭學長',
     description: '溫和的個性，和每個都處的很好，喜歡慢跑的帥氣學長。',
     sprites: {
-      default: 'https://res.cloudinary.com/dcpzacz9d/image/upload/v1746293250/8_m5odzf.png', 
+      default: 'https://res.cloudinary.com/dcpzacz9d/image/upload/v1746366524/8_fjbldu.webp', 
     },
     initialAffection: 0, // 初始好感度
     isLoveInterest: true,
   },
-  'classmate_B': {
-    id: 'classmate_B',
-    name: '同級生B',
-    description: '有點酷酷的同年級隊員，似乎不 KUSO 好相處。',
+  'classmate_wu': {
+    id: 'classmate_wu',
+    name: '卍超‧魔甲組男卍',
+    description: '超甲組',
     sprites: {
-      default: 'https://res.cloudinary.com/dcpzacz9d/image/upload/v1746276764/6_mwx2nn.png', // 替換成實際路徑
-      angry: 'https://res.cloudinary.com/dcpzacz9d/image/upload/v1746276764/6_mwx2nn.png',
-      // happy: '/assets/images/characters/classmate_B/happy.png',
+      default: 'https://res.cloudinary.com/dcpzacz9d/image/upload/v1746366522/6_mmjgl9.webp', 
     },
     initialAffection: 5,
     isLoveInterest: true,

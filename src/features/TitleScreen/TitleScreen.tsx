@@ -8,6 +8,12 @@ interface TitleScreenProps {
   onGameStart: () => void; // Callback function to signal game start
 }
 
+// 圖片 URL
+const patternUrl =
+  "https://res.cloudinary.com/dcpzacz9d/image/upload/v1746366787/Untitled_design_5_kzlr14.webp";
+const charUrl =
+  "https://res.cloudinary.com/dcpzacz9d/image/upload/v1746366523/7_l6nvt4.webp";
+
 // Animation Variants
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -15,13 +21,13 @@ const containerVariants = {
     opacity: 1,
     transition: {
       delay: 0.2,
-      when: "beforeChildren", // Animate children after container is ready
-      staggerChildren: 0.4, // Stagger child animations
+      when: "beforeChildren",
+      staggerChildren: 0.4,
     },
   },
   exit: {
     opacity: 0,
-    y: -50, // Move up slightly on exit
+    y: -50,
     transition: { duration: 0.5 },
   },
 };
@@ -33,28 +39,51 @@ const titleVariants = {
 
 const buttonVariants = {
   hidden: { scale: 0.5, opacity: 0 },
-  visible: { scale: 1, opacity: 1, transition: { delay: 1.0, duration: 0.3 } }, // Appear after title
+  visible: { scale: 1, opacity: 1, transition: { delay: 1.0, duration: 0.3 } },
 };
 
-// Basic background component (can be enhanced)
+// 這裡改用 Framer Motion 做背景無限移動＋角色 slide in + 果凍效果
 const TitleBackground: React.FC = () => (
-  <div className="absolute inset-0 bg-gradient-to-br from-pink-300 via-purple-300 to-indigo-400 z-0">
-    {/* You could add subtle moving elements here */}
-  </div>
+  <>
+    {/* 無限往右上角移動的背景 pattern */}
+    <motion.div
+      className="absolute inset-0 z-0"
+      style={{
+        backgroundImage: `url(${patternUrl})`,
+        backgroundSize: "cover",
+        backgroundRepeat: "repeat",
+      }}
+      initial={{ backgroundPosition: "0px 0px" }}
+      animate={{ backgroundPosition: ["0px 0px", "1000px -1000px"] }}
+      transition={{ repeat: Infinity, duration: 30, ease: "linear" }}
+    />
+
+    {/* 從底下 slide in，並帶果凍彈性效果的角色圖 */}
+    <motion.img
+      src={charUrl}
+      className="absolute bottom-[10%] left-[15%]  w-[70%] opacity-70"
+      initial={{ y: "100%", opacity: 0, scale: 1 }}
+      animate={{ y: "0%", opacity: 0.8, scale: [1, 1.1, 0.9, 1] }}
+      transition={{
+        y: { type: "spring", stiffness: 70, damping: 10, delay: 1.5 },
+        scale: { times: [0, 0.3, 0.6, 1], duration: 0.6, delay: 2 },
+      }}
+    />
+  </>
 );
 
 export const TitleScreen: React.FC<TitleScreenProps> = ({ onGameStart }) => {
   const [isExiting, setIsExiting] = useState(false);
-
-  const handleStartClick = () => {
-    setIsExiting(true); // Start the exit animation
-  };
-
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
-  // Check if any endings are unlocked to potentially show the gallery button
+
+  // 檢查是否有解鎖過結局
   const hasUnlockedEndings = useMetaStore(
     (state) => state.unlockedEndings.length > 0
   );
+
+  const handleStartClick = () => {
+    setIsExiting(true);
+  };
 
   const handleToggleGallery = () => {
     setIsGalleryOpen((prev) => !prev);
@@ -63,29 +92,29 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onGameStart }) => {
   return (
     <>
       <AnimatePresence onExitComplete={onGameStart}>
-        {!isExiting && ( // Only render if not exiting
+        {!isExiting && (
           <motion.div
-            className="relative w-full h-full flex flex-col items-center justify-center text-center overflow-hidden"
+            className="relative w-full h-full flex flex-col items-center pt-[30%] text-center overflow-hidden"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            exit="exit" // Specify exit variant
+            exit="exit"
           >
             <TitleBackground />
 
-            {/* Game Title */}
+            {/* 遊戲標題 */}
             <motion.h1
-              className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-8 z-10 drop-shadow-lg"
+              className="text-5xl sm:text-5xl md:text-6xl font-bold text-white mb-8 z-10 drop-shadow-lg rampart-one-regular"
               variants={titleVariants}
               style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
             >
               肉泥也想談戀愛
             </motion.h1>
 
-            {/* Start Button */}
+            {/* 開始按鈕 */}
             <motion.button
               onClick={handleStartClick}
-              className="px-8 py-3 bg-white text-indigo-600 font-semibold rounded-full shadow-lg hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-75 z-10 transform hover:scale-105 transition-transform duration-150"
+              className="px-8 py-3 z-10 transform text-white border border-white rounded-full w-[200px] mt-8 kaisei-tokumin-medium text-2xl"
               variants={buttonVariants}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -93,16 +122,18 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onGameStart }) => {
               開始遊戲
             </motion.button>
 
+            {/* 回憶圖鑑按鈕（有解鎖結局才顯示） */}
             {hasUnlockedEndings && (
-              <button
+              <motion.button
+                variants={buttonVariants}
                 onClick={handleToggleGallery}
-                className="mt-4 px-8 py-3 bg-pink-500 text-white font-semibold rounded-full shadow-lg hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:ring-opacity-75 transform hover:scale-105 transition-transform duration-150 w-48"
+                className="mt-4 px-8 py-3 z-10 transform bg-pink-400 text-white border border-pink-400 rounded-full w-[200px] kaisei-tokumin-medium text-2xl"
               >
                 回憶圖鑑
-              </button>
+              </motion.button>
             )}
 
-            {/* Optional: Add version number or credits */}
+            {/* 版本號 */}
             <motion.p
               className="absolute bottom-4 text-white text-opacity-70 text-sm z-10"
               initial={{ opacity: 0 }}
@@ -113,6 +144,8 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({ onGameStart }) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Gallery 畫面 */}
       <AnimatePresence>
         {isGalleryOpen && (
           <motion.div

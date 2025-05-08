@@ -1,9 +1,9 @@
 // src/features/EndingScreen/EndingScreen.tsx
-import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useGameStore, useCharacterStore, useMetaStore } from '../../store';
-import { getEndingById } from '../../data/ending';
-import type { Ending } from '../../types';
+import React, { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useGameStore, useCharacterStore, useMetaStore } from "../../store";
+import { getEndingById } from "../../data/ending";
+import type { Ending } from "../../types";
 
 interface EndingScreenProps {
   returnToTitle: () => void; // Callback function passed from App.tsx
@@ -16,20 +16,24 @@ const fadeVariants = {
 };
 
 const textVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.8, delay: 0.5 } },
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.8, delay: 0.5 } },
 };
 
 const cgVariants = {
-     hidden: { opacity: 0, scale: 1.1 },
-    visible: { opacity: 1, scale: 1, transition: { duration: 1.2, delay: 0.2 } },
-}
+  hidden: { opacity: 0, scale: 1.1 },
+  visible: { opacity: 1, scale: 1, transition: { duration: 1.2, delay: 0.2 } },
+};
 
-export const EndingScreen: React.FC<EndingScreenProps> = ({ returnToTitle }) => {
+export const EndingScreen: React.FC<EndingScreenProps> = ({
+  returnToTitle,
+}) => {
   const activeEndingId = useGameStore((state) => state.activeEndingId);
   const setActiveEnding = useGameStore((state) => state.setActiveEnding);
   const resetGameState = useGameStore((state) => state.resetGameState);
-  const resetCharacterStates = useCharacterStore((state) => state.resetCharacterStates);
+  const resetCharacterStates = useCharacterStore(
+    (state) => state.resetCharacterStates
+  );
   const unlockEnding = useMetaStore((state) => state.unlockEnding); // Get unlock action
 
   const [endingData, setEndingData] = useState<Ending | null>(null);
@@ -53,9 +57,9 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({ returnToTitle }) => 
     const textContent = endingData.text;
     if (Array.isArray(textContent)) {
       if (textIndex < textContent.length - 1) {
-        setTextIndex(prev => prev + 1);
+        setTextIndex((prev) => prev + 1);
       } else {
-         setShowContinue(true); // Show continue button after last text
+        setShowContinue(true); // Show continue button after last text
       }
     } else {
       // If text is a single string, show continue immediately
@@ -64,23 +68,41 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({ returnToTitle }) => 
   }, [endingData, textIndex]);
 
   const handleReturnToTitle = useCallback(() => {
-      if (!activeEndingId) return;
+    if (!activeEndingId) return;
 
-      console.log("Returning to title, unlocking ending:", activeEndingId);
-      // 1. Unlock the ending in meta store
-      unlockEnding(activeEndingId);
+    console.log("Returning to title, unlocking ending:", activeEndingId);
+    // 1. Unlock the ending in meta store
+    unlockEnding(activeEndingId);
 
-      // 2. Reset game state
-      resetGameState();
-      resetCharacterStates();
+    // 2. Reset game state
+    resetGameState();
+    resetCharacterStates();
 
-       // 3. Clear active ending (hides this screen)
-      setActiveEnding(null); // This might trigger unmount *before* returnToTitle callback finishes if not careful
+    // 3. Clear active ending (hides this screen)
+    setActiveEnding(null); // This might trigger unmount *before* returnToTitle callback finishes if not careful
 
-      // 4. Call the callback provided by App.tsx
-      returnToTitle();
+    // 4. Call the callback provided by App.tsx
+    returnToTitle();
+  }, [
+    activeEndingId,
+    unlockEnding,
+    resetGameState,
+    resetCharacterStates,
+    setActiveEnding,
+    returnToTitle,
+  ]);
 
-  }, [activeEndingId, unlockEnding, resetGameState, resetCharacterStates, setActiveEnding, returnToTitle]);
+  const handleScreenClick = useCallback(() => {
+    if (!endingData) return; // Should not happen if screen is visible
+
+    if (showContinue) {
+      // If the final button is visible, clicking anywhere returns to title
+      handleReturnToTitle();
+    } else {
+      // Otherwise, advance the text
+      handleAdvanceText();
+    }
+  }, [endingData, showContinue, handleReturnToTitle, handleAdvanceText]);
 
 
   if (!activeEndingId || !endingData) {
@@ -88,17 +110,20 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({ returnToTitle }) => 
   }
 
   const currentText = Array.isArray(endingData.text)
-                        ? endingData.text[textIndex]
-                        : endingData.text;
+    ? endingData.text[textIndex]
+    : endingData.text;
+
 
   return (
     // Use AnimatePresence if EndingScreen is conditionally rendered in MainGame/App
     <motion.div
-        className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black text-white p-8 text-center"
-        variants={fadeVariants}
-        initial="hidden"
-        animate="visible"
-        exit="exit"
+      className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black text-white p-8 text-center cursor-pointer kaisei-tokumin-regular" // Add cursor-pointer
+      onClick={handleScreenClick} // Attach the combined handler here
+      variants={fadeVariants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      aria-label={`結局：${endingData.name}。點擊繼續。`}
     >
       {/* Optional CG Image */}
       {endingData.cgPath && (
@@ -120,32 +145,37 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({ returnToTitle }) => 
        </motion.h2>
 
       {/* Ending Text */}
-      {/* Key ensures text animates in each time it changes */}
+      {/* Removed onClick from here */}
       <motion.p
         key={textIndex}
         className="text-xl md:text-2xl whitespace-pre-wrap mb-12 z-10 max-w-3xl drop-shadow-md leading-relaxed"
         variants={textVariants}
-        onClick={handleAdvanceText} // Click text to advance
-        style={{ cursor: showContinue ? 'default' : 'pointer' }}
+        // onClick={handleAdvanceText} // REMOVED onClick from here
+        style={{ pointerEvents: "none" }} // Prevent text from intercepting clicks meant for the background div
       >
         {currentText}
       </motion.p>
 
-
-      {/* Continue Button */}
-       <AnimatePresence>
+      {/* Continue Button (Still visible, but click handled by screen click) */}
+      <AnimatePresence>
         {showContinue && (
-            <motion.button
-                onClick={handleReturnToTitle}
-                className="mt-8 px-6 py-2 bg-white text-black font-semibold rounded shadow-lg hover:bg-gray-200 z-10"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-            >
-                回到標題畫面
-            </motion.button>
+          <motion.button
+            // onClick={handleReturnToTitle} // Can remove onClick or keep as backup
+            onClick={(e) => {
+              e.stopPropagation();
+              handleReturnToTitle();
+            }} // Keep but stop propagation
+            className="mt-8 px-6 py-2 bg-white text-black font-semibold rounded shadow-lg hover:bg-gray-200 z-10"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            aria-hidden="true" // Hide from accessibility tree as screen click handles it
+            style={{ pointerEvents: "auto" }} // Ensure button itself IS clickable
+          >
+            回到標題畫面
+          </motion.button>
         )}
-        </AnimatePresence>
+      </AnimatePresence>
     </motion.div>
   );
 };

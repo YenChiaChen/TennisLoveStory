@@ -24,11 +24,13 @@ export interface Choice {
 
 export interface StoryNode {
   id: string; // Unique ID for this node (e.g., "chapter1_intro_1")
+  nodeType?: 'dialogue' | 'eventTitle'
   sceneId: string; // Background scene ID from src/data/scenes.ts
   characterId?: string; // ID of the speaking character (from src/data/characters.ts), null/undefined for narration
   spriteExpression?: keyof CharacterSprites; // Expression key (e.g., 'happy', 'default')
   text: string | string[]; // Dialogue text (string array for multi-part dialogue)
   choices?: Choice[]; // Array of player choices
+  eventTitleText?: string;
   nextNodeId?: string; // Default next node ID if no choices or auto-advance
   triggerMiniGameId?: string; // Optional: ID of a mini-game to start after this node
   effects?: GameStateModifier[]; // Optional array of functions to execute upon entering this node

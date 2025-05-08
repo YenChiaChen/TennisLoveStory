@@ -14,7 +14,10 @@ import { DialogueBox } from "../../components/DialogueBox";
 import { ChoiceButton } from "../../components/ChoiceButton";
 import { getSceneById } from "../../data/scenes";
 import { MapView } from "../MapView/MapView";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { EventTitleDisplay } from "../../components/EventTitleDisplay";
+import { AffectionIndicatorManager } from "../../components/AffectionChangeIndicator";
+import { PhoneScreen } from "../PhoneScreen/PhoneScreen";
 
 // Placeholder for MiniGame components mapping
 // import { TennisRallyGame } from './MiniGames/TennisRally/TennisRallyGame';
@@ -43,6 +46,9 @@ export const MainGame: React.FC = () => {
   const [dialogueIndex, setDialogueIndex] = useState(0); // For multi-part dialogue
   const [showChoices, setShowChoices] = useState(false);
   const [speakerName, setSpeakerName] = useState<string | null>(null);
+  const isPhoneUnlocked = useGameStore((state) => state.isPhoneUnlocked);
+  const isPhoneOpen = useGameStore((state) => state.isPhoneOpen);
+  const openPhone = useGameStore((state) => state.openPhone);
   const [isMapOpen, setIsMapOpen] = useState(false); // New state for map view
   const [currentCharacterSprite, setCurrentCharacterSprite] = useState<
     string | null
@@ -75,6 +81,18 @@ export const MainGame: React.FC = () => {
       // window.location.reload();
     }
   }, [resetGameState, resetCharacterStates]); // 包含依賴項
+
+  const handleEventTitleClick = useCallback(() => {
+    if (!currentNode || currentNode.nodeType !== "eventTitle") return;
+
+    if (currentNode.nextNodeId) {
+      // Advance to the next node
+      useGameStore.getState().setStoryNode(currentNode.nextNodeId);
+    } else {
+      console.warn("EventTitle node has no nextNodeId:", currentNode.id);
+      // Potentially hang here, or maybe auto-close the title? For now, requires nextNodeId.
+    }
+  }, [currentNode]);
 
   // --- Engine Instantiation ---
   // Use useMemo to create the engine instance only once
@@ -234,6 +252,11 @@ export const MainGame: React.FC = () => {
     [currentNode, storyEngine]
   );
 
+  const isEventTitleNode =
+    currentNode?.nodeType === "eventTitle" && !!currentNode.eventTitleText;
+  const isDialogueNode =
+    !currentNode?.nodeType || currentNode?.nodeType === "dialogue"; // Default or explicit dialogue
+
   // --- Rendering Logic ---
 
   const CurrentMiniGameComponent = activeMiniGameId
@@ -241,7 +264,10 @@ export const MainGame: React.FC = () => {
     : null;
 
   return (
-    <div className="relative w-full h-full overflow-hidden bg-black">
+    <div
+      className="relative w-full h-full overflow-hidden bg-black"
+      id="game-container"
+    >
       <button
         onClick={handleDebugReset}
         className="absolute top-2 right-2 z-50 bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-2 rounded shadow opacity-80 hover:opacity-100"
@@ -249,13 +275,35 @@ export const MainGame: React.FC = () => {
       >
         RESET GAME
       </button>
-      <button
+      {/* <button
         onClick={handleToggleSettings}
         className="absolute top-2 left-2 z-50 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-2 rounded shadow opacity-80 hover:opacity-100"
         title="開啟設定/狀態"
       >
         MENU
-      </button>
+      </button> */}
+      {/* {isPhoneUnlocked && (
+        <button
+          onClick={openPhone}
+          className="absolute top-2 left-2 z-50 bg-green-600 hover:bg-green-700 text-white p-1.5 rounded-full shadow disabled:opacity-50 disabled:cursor-not-allowed"
+          title="開啟手機"
+          disabled={
+            isPhoneOpen || isMapOpen || isSettingsOpen || !!activeMiniGameId
+          } // Disable if other overlays are open or in minigame
+        >
+          開啟手機
+        </button>
+      )} */}
+      {isPhoneUnlocked && (
+        <div onClick={openPhone}>
+          <img
+            src={
+              "https://res.cloudinary.com/dcpzacz9d/image/upload/v1746368626/Untitled_design_6_krybcd.png"
+            }
+            className="z-50 absolute top-2 left-2 w-10"
+          />
+        </div>
+      )}
       {/* <button
         onClick={handleToggleMap}
         className="absolute top-10 left-2 z-50 bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1 px-2 rounded shadow opacity-80 hover:opacity-100"
@@ -265,6 +313,7 @@ export const MainGame: React.FC = () => {
         MAP
       </button> */}
       {/* 1. Background Layer */}
+      <AffectionIndicatorManager />
       <BackgroundDisplay imagePath={currentBackground} />
       {/* 2. Character Layer */}
       {/* Basic implementation showing one character, centered */}
@@ -286,39 +335,73 @@ export const MainGame: React.FC = () => {
       )}
       {/* 4. UI Layer (Dialogue / Choices) - Hidden during minigame */}
       {!activeMiniGameId && currentNode && (
-        <>
-          {/* Dialogue Box */}
-          <DialogueBox
-            speakerName={speakerName}
-            dialogue={
-              Array.isArray(currentNode.text)
-                ? currentNode.text[dialogueIndex] ?? ""
-                : currentNode.text
-            }
-            onDialogueAdvance={handleDialogueAdvance}
-            isVisible={!showChoices} // Hide dialogue box when choices are shown
-          />
-
-          {/* Choice Buttons Area (Shown instead of Dialogue Box) */}
-          {showChoices && currentNode.choices && (
-            <div className="absolute inset-x-0 bottom-10 z-30 flex flex-col items-center justify-center p-4">
-              {currentNode.choices
-                .filter(
-                  (choice) =>
-                    !choice.condition ||
-                    storyEngine.checkCondition(choice.condition)
-                ) // Filter based on condition
-                .map((choice, index) => (
-                  <ChoiceButton
-                    key={`${currentNode.id}-choice-${index}`}
-                    text={choice.text}
-                    onClick={() => handleChoiceClick(choice)}
-                  />
-                ))}
-            </div>
-          )}
-        </>
+        <AnimatePresence mode="wait">
+          {" "}
+          {/* Allows exit anim before next enters */}
+          {
+            isEventTitleNode ? (
+              <EventTitleDisplay
+                key={`evt-${currentNode.id}`}
+                titleText={currentNode.eventTitleText!} // Assert non-null as we checked isEventTitleNode
+                onClick={handleEventTitleClick}
+              />
+            ) : isDialogueNode ? (
+              // Use a key here if DialogueBox needs enter/exit animation itself
+              <motion.div key={`dlg-${currentNode.id}`} className="contents">
+                {" "}
+                {/* Use "contents" to avoid extra div affecting layout */}
+                <DialogueBox
+                  // key={`dialogue-${currentNode.id}-${dialogueIndex}`} // Key might be needed if animating text change
+                  speakerName={speakerName}
+                  dialogue={
+                    Array.isArray(currentNode.text)
+                      ? currentNode.text[dialogueIndex] ?? ""
+                      : currentNode.text ?? "" // Handle optional text
+                  }
+                  onDialogueAdvance={handleDialogueAdvance}
+                  isVisible={!showChoices}
+                />
+                {/* Choice Buttons */}
+                {showChoices && currentNode.choices && (
+                  <motion.div
+                    key={`choices-${currentNode.id}`}
+                    className="absolute inset-x-0 bottom-10 z-30 flex flex-col items-center justify-center p-4"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 20 }}
+                  >
+                    {currentNode.choices
+                      .filter(
+                        (choice) =>
+                          !choice.condition ||
+                          storyEngine.checkCondition(choice.condition)
+                      )
+                      .map((choice, index) => (
+                        <ChoiceButton
+                          key={`${currentNode.id}-choice-${index}`}
+                          text={choice.text}
+                          onClick={() => handleChoiceClick(choice)}
+                        />
+                      ))}
+                  </motion.div>
+                )}
+              </motion.div>
+            ) : null /* End of node type check */
+          }
+        </AnimatePresence>
       )}
+      <AnimatePresence>
+        {isPhoneOpen && (
+          <motion.div
+            key="phone-screen"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <PhoneScreen /> {/* PhoneScreen handles its own close logic */}
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* 5. Settings Screen Layer */}
       {isSettingsOpen && <SettingsScreen onClose={handleToggleSettings} />}
       {/* 6. Map View Layer */}
