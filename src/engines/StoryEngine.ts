@@ -84,7 +84,7 @@ export class StoryEngine {
 
 
   // Helper to apply an array of effect functions
-  private applyEffects(
+  applyEffects(
       effects: GameStateModifier[],
       gameState: GameState,
       characterState: CharacterStoreState

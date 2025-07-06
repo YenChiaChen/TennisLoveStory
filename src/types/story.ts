@@ -38,7 +38,9 @@ export interface StoryNode {
     bgm?: string; // Path or ID for background music to start/change
     sfx?: string; // Path or ID for a sound effect to play
   };
+  typingDelay?: number; 
 }
+
 
 // Structure for how story data might be organized in files
 export type StoryData = Record<string, StoryNode>;

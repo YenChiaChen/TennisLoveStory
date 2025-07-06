@@ -4,3 +4,4 @@ export * from './story';
 export * from './gameState';
 export * from './ending';
 export * from './calendar';
+export * from './message';

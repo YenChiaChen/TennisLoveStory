@@ -61,6 +61,8 @@ export const MainGame: React.FC = () => {
     setIsSettingsOpen((prev) => !prev);
   }, []);
 
+   const unreadCount = useGameStore((state) => state.unreadMessages.length);
+
   const miniGameReturnContext = useGameStore(
     (state) => state.miniGameReturnContext
   );
@@ -275,26 +277,7 @@ export const MainGame: React.FC = () => {
       >
         RESET GAME
       </button>
-      {/* <button
-        onClick={handleToggleSettings}
-        className="absolute top-2 left-2 z-50 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-2 rounded shadow opacity-80 hover:opacity-100"
-        title="開啟設定/狀態"
-      >
-        MENU
-      </button> */}
       {/* {isPhoneUnlocked && (
-        <button
-          onClick={openPhone}
-          className="absolute top-2 left-2 z-50 bg-green-600 hover:bg-green-700 text-white p-1.5 rounded-full shadow disabled:opacity-50 disabled:cursor-not-allowed"
-          title="開啟手機"
-          disabled={
-            isPhoneOpen || isMapOpen || isSettingsOpen || !!activeMiniGameId
-          } // Disable if other overlays are open or in minigame
-        >
-          開啟手機
-        </button>
-      )} */}
-      {isPhoneUnlocked && (
         <div onClick={openPhone}>
           <img
             src={
@@ -303,7 +286,33 @@ export const MainGame: React.FC = () => {
             className="z-50 absolute top-2 left-2 w-10"
           />
         </div>
-      )}
+      )} */}
+
+      <div className="z-50 absolute top-2 left-2 w-10">
+
+        {isPhoneUnlocked && (
+                    <button
+                        onClick={openPhone}
+                        className="relative transition-transform duration-150 ease-in-out hover:scale-110 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                        title="開啟手機"
+                        disabled={isPhoneOpen || isMapOpen || isSettingsOpen || !!activeMiniGameId}
+                        aria-label={`手機（${unreadCount}則未讀訊息）`}
+                    >
+                        {/* 使用你的圖片 */}
+                        <img
+                            src={"https://res.cloudinary.com/dcpzacz9d/image/upload/v1746368626/Untitled_design_6_krybcd.png"}
+                            alt="手機"
+                            className="w-10 h-10 drop-shadow-md" // drop-shadow 增加立體感
+                        />
+                        {/* 保留未讀訊息的通知角標 */}
+                        {unreadCount > 0 && (
+                            <span className="absolute top-0 right-0 flex h-3 w-3 pointer-events-none">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white"></span>
+                            </span>
+                        )}
+                    </button>
+                )}</div>
       {/* <button
         onClick={handleToggleMap}
         className="absolute top-10 left-2 z-50 bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1 px-2 rounded shadow opacity-80 hover:opacity-100"

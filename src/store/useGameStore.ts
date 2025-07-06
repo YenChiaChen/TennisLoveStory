@@ -1,8 +1,22 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { AffectionAnimationItem, GameState } from '../types';
+import type { MessageTrigger } from '../types';
+import { MESSAGE_TRIGGERS } from '../data/messageTriggers';
+import { useCharacterStore } from './useCharacterStore';
 
 type MiniGameReturnContext = 'story' | 'map' | null;
+
+export interface ActiveMessageConversation {
+    triggerId: string;
+    characterId: string;
+    currentMessageNodeId: string;
+}
+
+export interface MessageHistoryItem {
+  sender: string; 
+  text: string;
+}
 
 interface GameStateActions {
   setStoryNode: (nodeId: string | null) => void;
@@ -21,6 +35,12 @@ interface GameStateActions {
   openPhone: () => void;        // New action
   closePhone: () => void;       // New action
   advanceDay: (days?: number) => void; // New action to advance day counter
+    checkForNewMessages: () => void; // Action to check for new messages based on day and conditions
+  openMessageConversation: (triggerId: string) => void;
+  closeMessageConversation: () => void;
+  advanceMessageNode: (nextNodeId: string) => void;
+  saveConversationHistory: (triggerId: string, history: MessageHistoryItem[]) => void;
+  
 }
 
 let nextAnimationId = 0;
@@ -37,7 +57,11 @@ const initialGameState: GameState = {
   affectionAnimationQueue: [],
   isPhoneUnlocked: false, 
   isPhoneOpen: false,    
-  currentDay: 1,         
+  currentDay: 1,    
+    unreadMessages: [],
+  readMessages: [],
+  activeMessageConversation: null,     
+   conversationHistories: {}, 
 };
 
 
@@ -117,6 +141,16 @@ export const useGameStore = create<GameState & GameStateActions>()(
           }));
       },
 
+      saveConversationHistory: (triggerId, history) => {
+        console.log(`Saving history for conversation: ${triggerId}`);
+        set(state => ({
+          conversationHistories: {
+            ...state.conversationHistories,
+            [triggerId]: history, // 用 triggerId 作為 key 儲存歷史記錄
+          }
+        }));
+      },
+
       unlockPhone: () => {
         console.log("Phone Unlocked!");
         set({ isPhoneUnlocked: true });
@@ -129,7 +163,59 @@ export const useGameStore = create<GameState & GameStateActions>()(
       },
       closePhone: () => {
           console.log("Closing Phone");
-          set({ isPhoneOpen: false });
+          set({ isPhoneOpen: false,
+            activeMessageConversation: null, 
+           });
+      },
+
+
+      checkForNewMessages: () => {
+        const { currentDay, readMessages, unreadMessages } = get();
+        const characterState = useCharacterStore.getState(); // Get fresh character state
+        const gameStateForCheck = { ...get() }; // Pass a snapshot of game state to conditions
+
+        const newTriggers = MESSAGE_TRIGGERS.filter(trigger =>
+          trigger.day === currentDay && // Check day
+          !readMessages.includes(trigger.id) && // Not already read
+          !unreadMessages.includes(trigger.id) && // Not already in unread queue
+          trigger.condition(gameStateForCheck, characterState) // Check conditions (affection, flags)
+        );
+
+        if (newTriggers.length > 0) {
+            const newTriggerIds = newTriggers.map(t => t.id);
+            console.log("New messages received:", newTriggerIds);
+            set(state => ({ unreadMessages: [...state.unreadMessages, ...newTriggerIds] }));
+        }
+      },
+
+      openMessageConversation: (triggerId) => {
+          const trigger = MESSAGE_TRIGGERS.find(t => t.id === triggerId);
+          if (!trigger) return;
+
+          set(state => ({
+              activeMessageConversation: {
+                  triggerId,
+                  characterId: trigger.characterId,
+                  currentMessageNodeId: trigger.startNodeId,
+              },
+              // Move from unread to read
+              unreadMessages: state.unreadMessages.filter(id => id !== triggerId),
+              readMessages: state.readMessages.includes(triggerId) ? state.readMessages : [...state.readMessages, triggerId],
+          }));
+      },
+
+      closeMessageConversation: () => set({ activeMessageConversation: null }),
+
+      advanceMessageNode: (nextNodeId) => {
+          set(state => {
+              if (!state.activeMessageConversation) return {};
+              return {
+                  activeMessageConversation: {
+                      ...state.activeMessageConversation,
+                      currentMessageNodeId: nextNodeId,
+                  }
+              };
+          });
       },
       // --- Day Action ---
       advanceDay: (days = 1) => {
@@ -140,6 +226,8 @@ export const useGameStore = create<GameState & GameStateActions>()(
               // You might trigger other checks here when day advances (e.g., new events available)
               return { currentDay: nextDay };
           });
+
+          get().checkForNewMessages(); // Call the check here!
            // Potentially check for side quests again at start of day?
           // checkAndTriggerSideQuests(...); // Needs careful implementation
       },
@@ -158,6 +246,8 @@ export const useGameStore = create<GameState & GameStateActions>()(
         returnStoryNodeId: state.returnStoryNodeId, // Persist return node
         isPhoneUnlocked: state.isPhoneUnlocked, // Persist unlocked status
         currentDay: state.currentDay, // Persist current day
+         readMessages: state.readMessages,
+         conversationHistories: state.conversationHistories, 
       }),
     }
   )

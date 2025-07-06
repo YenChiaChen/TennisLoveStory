@@ -6,6 +6,7 @@ import { useGameStore } from '../../store'; // Needed for endSideQuest
 // --- Merge side quest data with main story for the engine ---
 // You might need a better way to manage multiple story files later
 import { MAIN_STORY as M_STORY} from './main_story';
+import { SENPAI_A_MESSAGES } from '../messages/senpai_A_messages';
 
 // Effect to end the side quest
 const endCurrentSideQuest: () => void = () => {
@@ -67,4 +68,4 @@ export const SENPAI_A_SIDEQUEST_1: StoryData = {
 };
 
 
-export const COMBINED_STORY_DATA = { ...M_STORY, ...SENPAI_A_SIDEQUEST_1 };
+export const COMBINED_STORY_DATA = { ...M_STORY, ...SENPAI_A_SIDEQUEST_1,  ...SENPAI_A_MESSAGES, };

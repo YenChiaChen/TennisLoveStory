@@ -1,3 +1,5 @@
+import { ActiveMessageConversation, MessageHistoryItem } from "../store";
+
 // Represents the core, persistent state of the game progress
 type MiniGameReturnContext = 'story' | 'map' | null;
 
@@ -19,6 +21,10 @@ export interface GameState {
     isPhoneUnlocked: boolean; // New: 手機功能是否已解鎖
     isPhoneOpen: boolean;     // New: 手機介面是否打開 (Runtime state)
     currentDay: number;       // New: 遊戲中的當前天數
+    unreadMessages: string[]; // Array of unread MessageTrigger IDs
+    readMessages: string[];   // Array of read MessageTrigger IDs
+    activeMessageConversation: ActiveMessageConversation | null; // The currently open conversation
+    conversationHistories: Record<string, MessageHistoryItem[]>;
   }
   
   // Represents non-persistent runtime state, often managed by specific components/hooks
